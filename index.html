@@ -1,110 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <meta charset="utf-8">
-    <title>Merry Christmas 2025</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+    <title>Giáng Sinh An Lành - Magic AR</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
-        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; text-align: center; }
-        button { padding: 20px 40px; font-size: 20px; background: #ff0000; color: #fff; border: 2px solid #ffd700; border-radius: 50px; cursor: pointer; box-shadow: 0 0 20px #f00; }
-        #status { color: #ffd700; margin-top: 15px; font-weight: bold; }
-        #webcam { position: absolute; top: 10px; right: 10px; width: 200px; height: 150px; border: 2px solid #fff; border-radius: 10px; transform: scaleX(-1); z-index: 10; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #video-container { position: relative; width: 100vw; height: 100vh; }
+        canvas { position: absolute; top: 0; left: 0; z-index: 5; }
+        #ui { position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 10; color: #fff; text-shadow: 2px 2px 4px #000; }
+        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        button { padding: 15px 40px; font-size: 20px; background: #d32f2f; color: white; border: 2px solid #ffca28; border-radius: 50px; cursor: pointer; transition: 0.3s; box-shadow: 0 0 20px rgba(211,47,47,0.6); }
+        button:hover { transform: scale(1.1); background: #ffca28; color: #d32f2f; }
+        .guide { margin-top: 15px; font-size: 14px; color: #ffca28; }
     </style>
 </head>
 <body>
-    <div id="overlay">
-        <button id="startBtn">🎄 BẤM ĐỂ BẮT ĐẦU 🎄</button>
-        <div id="status">Hãy cho phép truy cập Camera sau khi bấm!</div>
+
+    <div id="start-screen">
+        <button id="btn-start">🎄 KHÁM PHÁ PHÉP MÀU 🎄</button>
+        <div class="guide">Vui lòng cho phép truy cập Camera sau khi bấm</div>
     </div>
+
+    <div id="ui">
+        <div>🖐️ Mở tay: Nổ hoa & Ảnh | ✊ Nắm tay: Cây thông | 🫶 2 tay: Trái tim</div>
+        <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">© 2025 Magic Christmas</div>
+    </div>
+
     <video id="input_video" style="display:none"></video>
-    <canvas id="webcam"></canvas>
+    <div id="video-container"></div>
 
     <script>
         const music = new Audio('xmasMusic.mp3');
         music.loop = true;
-        
-        let scene, camera, renderer, photoGroup, tree;
-        const photos = ['NL1.jpg', 'NL2.jpg', 'NL3.jpg', 'NL4.jpg', 'NL5.jpg', 'NL6.jpg', 'NL7.jpg', 'NL8.jpg', 'NL9.jpg', 'NL10.jpg'];
 
-        function initScene() {
+        let scene, camera, renderer, snowParticles, tree, heartParticles, photoGroup;
+        let videoElement, hands;
+
+        function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 100;
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+            document.getElementById('video-container').appendChild(renderer.domElement);
 
-            // Nhóm ảnh xoay
-            photoGroup = new THREE.Group();
-            const loader = new THREE.TextureLoader();
-            photos.forEach((url, i) => {
-                loader.load(url, (texture) => {
-                    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(25, 35), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }));
-                    const angle = (i / photos.length) * Math.PI * 2;
-                    mesh.position.set(Math.cos(angle) * 60, Math.sin(angle) * 20, Math.sin(angle) * 40);
-                    mesh.lookAt(0, 0, 0);
-                    photoGroup.add(mesh);
-                });
-            });
-            scene.add(photoGroup);
+            // 1. Tạo Tuyết rơi
+            const snowGeo = new THREE.BufferGeometry();
+            const snowCoords = [];
+            for (let i = 0; i < 1500; i++) {
+                snowCoords.push((Math.random() - 0.5) * 300, Math.random() * 300, (Math.random() - 0.5) * 300);
+            }
+            snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowCoords, 3));
+            const snowMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5, transparent: true });
+            snowParticles = new THREE.Points(snowGeo, snowMat);
+            scene.add(snowParticles);
 
-            // Cây thông đơn giản
-            const treeGeom = new THREE.ConeGeometry(30, 80, 4);
-            const treeMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-            tree = new THREE.Mesh(treeGeom, treeMat);
+            // 2. Tạo Cây thông (Wireframe)
+            const treeGeo = new THREE.ConeGeometry(25, 60, 8);
+            const treeMat = new THREE.MeshBasicMaterial({ color: 0x2e7d32, wireframe: true });
+            tree = new THREE.Mesh(treeGeo, treeMat);
             scene.add(tree);
             tree.visible = false;
+
+            // 3. Nhóm 10 ảnh NL
+            photoGroup = new THREE.Group();
+            const loader = new THREE.TextureLoader();
+            for(let i=1; i<=10; i++) {
+                loader.load(`NL${i}.jpg`, (tex) => {
+                    const p = new THREE.Mesh(new THREE.PlaneGeometry(20, 28), new THREE.MeshBasicMaterial({map: tex, side: 2}));
+                    const ang = (i/10) * Math.PI * 2;
+                    p.position.set(Math.cos(ang)*60, Math.sin(ang)*20, Math.sin(ang)*30);
+                    p.lookAt(0,0,0);
+                    photoGroup.add(p);
+                });
+            }
+            scene.add(photoGroup);
+            photoGroup.visible = false;
 
             animate();
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            if (photoGroup) photoGroup.rotation.y += 0.01;
-            if (tree) tree.rotation.y += 0.02;
+            if(snowParticles) {
+                snowParticles.rotation.y += 0.002;
+                snowParticles.position.y -= 0.2;
+                if(snowParticles.position.y < -150) snowParticles.position.y = 0;
+            }
+            if(tree.visible) tree.rotation.y += 0.05;
+            if(photoGroup.visible) photoGroup.rotation.y += 0.02;
             renderer.render(scene, camera);
         }
 
-        const videoElement = document.getElementById('input_video');
-        const canvasElement = document.getElementById('webcam');
-        const canvasCtx = canvasElement.getContext('2d');
-
-        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5 });
-        hands.onResults((results) => {
-            canvasCtx.save();
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+        // Xử lý AI nhận diện tay
+        function onResults(results) {
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const lm = results.multiHandLandmarks[0];
-                const isFist = Math.hypot(lm[8].x - lm[4].x, lm[8].y - lm[4].y) < 0.1;
-                tree.visible = isFist;
-                photoGroup.visible = !isFist;
-            }
-            canvasCtx.restore();
-        });
+                const landmarks = results.multiHandLandmarks[0];
+                const thumbTip = landmarks[4];
+                const indexTip = landmarks[8];
+                const dist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
 
-        document.getElementById('startBtn').onclick = () => {
-            document.getElementById('overlay').style.display = 'none';
+                if (results.multiHandLandmarks.length === 2) {
+                    // Hiệu ứng 2 tay (nếu cần làm tim, tạm thời ẩn hết hiện nền đẹp)
+                    tree.visible = false; photoGroup.visible = false;
+                } else {
+                    if (dist < 0.08) { // Nắm tay
+                        tree.visible = true; photoGroup.visible = false;
+                    } else { // Mở tay
+                        tree.visible = false; photoGroup.visible = true;
+                    }
+                }
+            } else {
+                tree.visible = false; photoGroup.visible = false;
+            }
+        }
+
+        document.getElementById('btn-start').onclick = async () => {
+            document.getElementById('start-screen').style.display = 'none';
             music.play();
-            initScene();
+            init();
+
+            videoElement = document.getElementById('input_video');
+            hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+            hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6 });
+            hands.onResults(onResults);
+
             const cam = new Camera(videoElement, {
                 onFrame: async () => { await hands.send({image: videoElement}); },
-                width: 640, height: 480
+                width: 1280, height: 720
             });
             cam.start();
+            
+            // Đưa video webcam làm nền
+            const videoCanvas = document.createElement('canvas');
+            videoCanvas.style.position = 'fixed';
+            videoCanvas.style.top = '0'; videoCanvas.style.left = '0';
+            videoCanvas.style.width = '100vw'; videoCanvas.style.height = '100vh';
+            videoCanvas.style.objectFit = 'cover';
+            videoCanvas.style.transform = 'scaleX(-1)';
+            videoCanvas.style.zIndex = '1';
+            document.body.appendChild(videoCanvas);
+            
+            const ctx = videoCanvas.getContext('2d');
+            function drawVideo() {
+                ctx.drawImage(videoElement, 0, 0, videoCanvas.width, videoCanvas.height);
+                requestAnimationFrame(drawVideo);
+            }
+            drawVideo();
         };
 
         window.addEventListener('resize', () => {
-            if(camera) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
 </body>
