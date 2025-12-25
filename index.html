@@ -262,14 +262,16 @@
             starMesh.position.set(0, CONFIG.treeHeight/2 + 2, 0);
             scene.add(starMesh);
 
-            // PHẦN CHỈNH SỬA: LỜI CHÚC CHO NGỌC LINH
+            // PHẦN CHỈNH SỬA: LỜI CHÚC CHO NGỌC LINH (MÀU HỒNG GỐC)
             const loveCanvas = document.createElement('canvas');
-            loveCanvas.width = 1024; loveCanvas.height = 400; // Tăng chiều cao để đủ 2 dòng
+            loveCanvas.width = 1024; loveCanvas.height = 400; // Giữ nguyên chiều cao cho 2 dòng
             const lCtx = loveCanvas.getContext('2d');
             lCtx.textAlign = 'center';
-            lCtx.fillStyle = '#FF0000'; // Màu chữ đỏ
-            lCtx.shadowColor = "#FFFFFF"; // Bóng trắng
-            lCtx.shadowBlur = 35;
+            
+            // --- KHÔI PHỤC MÀU GỐC BAN ĐẦU ---
+            lCtx.fillStyle = '#FF69B4'; // Màu hồng gốc
+            lCtx.shadowColor = "#FF1493"; // Màu bóng hồng đậm gốc
+            lCtx.shadowBlur = 35; // Giữ độ nhòe bóng
 
             // Dòng 1
             lCtx.font = 'bold 75px "Segoe UI", sans-serif';
@@ -279,7 +281,7 @@
             lCtx.fillText("Ngọc Linh", 512, 310);
 
             loveMesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(75, 30), // Tăng tỷ lệ hình chữ nhật để vừa 2 dòng
+                new THREE.PlaneGeometry(75, 30), // Giữ nguyên tỉ lệ khung
                 new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(loveCanvas), transparent: true, blending: THREE.AdditiveBlending })
             );
             loveMesh.position.set(0, 0, 20); loveMesh.visible = false;
