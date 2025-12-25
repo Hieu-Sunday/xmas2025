@@ -75,14 +75,18 @@
         // ==========================================
         // 1. CẬP NHẬT FILE CỦA BẠN TẠI ĐÂY
         // ==========================================
-        const MUSIC_URL = "xmasMusic.mp3"; 
+        // Đã cập nhật đường dẫn âm thanh vào thư mục images/
+        const MUSIC_URL = "images/xmasMusic.mp3"; 
         let bgMusic = new Audio(MUSIC_URL);
         bgMusic.loop = true; bgMusic.volume = 1.0;
 
         const loader = new THREE.TextureLoader();
+        // Tên file giữ nguyên, nhưng code bên dưới sẽ thêm "images/" vào trước
         const photoFiles = ['NL1.jpg', 'NL2.jpg', 'NL3.jpg', 'NL4.jpg', 'NL5.jpg', 'NL6.jpg', 'NL7.jpg', 'NL8.jpg', 'NL9.jpg', 'NL10.jpg'];
         const photoTextures = [];
-        photoFiles.forEach((f, i) => photoTextures[i] = loader.load(f));
+        
+        // CẬP NHẬT: Thêm đường dẫn images/ vào trước tên file
+        photoFiles.forEach((f, i) => photoTextures[i] = loader.load('images/' + f));
 
         function createCustomTexture(type) {
             const canvas = document.createElement('canvas');
